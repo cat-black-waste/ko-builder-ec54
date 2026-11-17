@@ -11,13 +11,14 @@ jobs:
       - name: deps
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq bc bison flex libssl-dev libelf-dev clang-12 lld-12 llvm-12 lld
+          sudo apt-get install -y -qq bc bison flex libssl-dev libelf-dev clang-12 lld-12 llvm-12 lld binutils-aarch64-linux-gnu
           sudo ln -sf /usr/bin/ld.lld-12 /usr/bin/ld.lld
           sudo ln -sf /usr/bin/clang-12 /usr/bin/clang
           sudo ln -sf /usr/bin/llvm-ar-12 /usr/bin/llvm-ar
           sudo ln -sf /usr/bin/llvm-nm-12 /usr/bin/llvm-nm
           sudo ln -sf /usr/bin/llvm-objcopy-12 /usr/bin/llvm-objcopy
           sudo ln -sf /usr/bin/llvm-strip-12 /usr/bin/llvm-strip
+          sudo ln -sf /usr/bin/llvm-objdump-12 /usr/bin/llvm-objdump
 
       - name: fetch kernel
         run: |
@@ -32,21 +33,25 @@ jobs:
           cp "$GITHUB_WORKSPACE/config" .config
           sed -i 's|^CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION="-gki-g94ee1bf2282b"|' .config
           sed -i 's|^CONFIG_LOCALVERSION_AUTO=.*|# CONFIG_LOCALVERSION_AUTO is not set|' .config
-          make ARCH=arm64 LLVM=-12 olddefconfig
+          sed -i 's|^CONFIG_LTO_CLANG=.*|# CONFIG_LTO_CLANG is not set|' .config
+          sed -i 's|^CONFIG_LTO_CLANG_THIN=.*|# CONFIG_LTO_CLANG_THIN is not set|' .config
+          sed -i 's|^CONFIG_LTO_CLANG_FULL=.*|# CONFIG_LTO_CLANG_FULL is not set|' .config
+          make ARCH=arm64 LLVM=-12 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
+          grep -E "^CONFIG_(LOCALVERSION|MODVERSIONS|MODULE_SIG|LTO_CLANG)" .config || true
 
       - name: build kernel
         run: |
           set -e
           cd kernel_common-android12-5.10.233_r00
-          make ARCH=arm64 LLVM=-12 -j"$(nproc)" vmlinux
-          make ARCH=arm64 LLVM=-12 -j"$(nproc)" modules
+          make ARCH=arm64 LLVM=-12 CROSS_COMPILE=aarch64-linux-gnu- -j"$(nproc)" vmlinux
+          make ARCH=arm64 LLVM=-12 CROSS_COMPILE=aarch64-linux-gnu- -j"$(nproc)" modules
           wc -l Module.symvers
 
       - name: build ko
         run: |
           set -e
           cd kernel_common-android12-5.10.233_r00
-          make ARCH=arm64 LLVM=-12 M="$GITHUB_WORKSPACE/lkm" modules
+          make ARCH=arm64 LLVM=-12 CROSS_COMPILE=aarch64-linux-gnu- M="$GITHUB_WORKSPACE/lkm" modules
           ls -la "$GITHUB_WORKSPACE/lkm/" || true
 
       - uses: actions/upload-artifact@v4
