@@ -11,7 +11,13 @@ jobs:
       - name: deps
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq bc bison flex libssl-dev libelf-dev clang-12 lld-12 llvm-12
+          sudo apt-get install -y -qq bc bison flex libssl-dev libelf-dev clang-12 lld-12 llvm-12 lld
+          sudo ln -sf /usr/bin/ld.lld-12 /usr/bin/ld.lld
+          sudo ln -sf /usr/bin/clang-12 /usr/bin/clang
+          sudo ln -sf /usr/bin/llvm-ar-12 /usr/bin/llvm-ar
+          sudo ln -sf /usr/bin/llvm-nm-12 /usr/bin/llvm-nm
+          sudo ln -sf /usr/bin/llvm-objcopy-12 /usr/bin/llvm-objcopy
+          sudo ln -sf /usr/bin/llvm-strip-12 /usr/bin/llvm-strip
 
       - name: fetch kernel
         run: |
